@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -18,18 +17,464 @@
         },
       }
     </script>
-  <script type="importmap">
-{
-  "imports": {
-    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.29.0",
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
-    "react": "https://aistudiocdn.com/react@^19.2.0"
-  }
-}
-</script>
-</head>
+    <style>
+        /* Simple transition for modal */
+        #setup-modal.hidden {
+            display: none;
+        }
+    </style>
+  </head>
   <body class="bg-gray-900">
     <div id="root"></div>
+
+    <script type="module">
+        import { GoogleGenAI, Modality } from "https://aistudiocdn.com/@google/genai@^1.29.0";
+
+        // --- STATE & CONSTANTS ---
+        const INITIAL_HOODIES = [
+          {
+            id: 'green',
+            name: 'Green Hoodie',
+            baseColorClass: 'bg-green-800',
+            selectedRingClass: 'ring-green-400',
+            image: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAgACADASIAAhEBAxEB/8QAFwABAQEBAAAAAAAAAAAAAAAAAAYFAwT/xAApEAACAQMDAwMDBQEAAAAAAAAAAQIDBBEFEiExQQYTUWEiInGBkaGx/8QAGAEBAQEBAQAAAAAAAAAAAAAAAAECAwT/xAAeEQEBAAICAgMAAAAAAAAAAAAAAQIRAxIhMRMEUf/aAAAANSUhEUgA8AU2vqG30s6dGipR4znGTk+fH3O/dG43F1XUqPIt34hjA4Xz9zUa3q1G21p1KaqVFxGM5OT78fc79q3K4oXFSeobhWp13KUKdGrKEIw/hBxg5A5POfJ+B1LqXk8b6d/f8ApSslzVqXNKndqVvcTnGrVdSE4wjw5OM1OPOMcZPGT21/T3h2S4vKdxVv7irRrVZVadOpWlKEYN8AYOAcDk859/J3N/qFGlZ0qtirTuq9xWjQoU6VWE/ElgtnKkgDCk84z7+Tv28+iTqKjJ96p/FTfMv6f/ADud7fH/AIz9P2z3f+K+m+R/T/0/KjJz6f8Ame3PtgfW+iU6tWjPvajhVgqfK/6v+bnfb468Z/8An7ZXfT/pXk+36vyoyZz58c8e+BpN3oVKNvdVre5o1q9vSlWq0oVYSlGMVlsYJyQOTxn38DbqV25XMa14uWv48/pWubyvTvqVtZ29K5rVKbqzdSp6cYQDb5OUbJOOMY9uSNm3rXVb1PXt/Z+nx5P1Iyc+cYxj25+59tTTqN9Q0eje2txShKFejTqUp0vEValSpGHGSwK/FyeeMD30K9qXVlWVOsoOM4+JTqU5eJTqRzgrQlwSMgj7g5BAIOmbxvbfTPL45a+P1e9u6Nna1Li4l+HTjlsDJ/YDkk8ADkk6Fvc3t7b07q1s6CtaieKm61w4zYJwSoxXODg440NXu7qlaUo2lKlUr3Faxt6UatRwhmVWEeWIUnACk+DwPfJ2tN1e7uL2jbXll7erWpOr+Gt6yq05JS2l5ZUZR5xjGPbkkZJ1nPL+nXOvjvX8vQdWpW224o28qFzWpTpSrxqS9GUVNKS2lKOUbJHBxj25I2rW4rXEPUubf2dXJGz1Iy49/lGPbI+51tHv767r3lC6tKEKltVjBTo1nNTUoKacZRhj5gce/BODjN6lSVaEqc3NRkmn4cpQnj6SiwZfoQDo8byz4PniY5L4vXQpQoQVOlGMIR+GMVhR+gA0jXtbS7jGO4oUq6g+afrQUsN8xkHj+Dr2lT9CEqcnUlGMmvEnKUXj6SLAy/QgjQ1zS7O9vrK4uKNzKtRqwdJ0ritTScpx2s1IwjL+F8OOW/ixzra8s6d3TpxnUrUpU5+JTq0Ksqc4S2tHhlJBHysp4xwSNG2tKFrDwoUoUo/ypRUf2A0vW9Jsr67tbq4o3E6tCpH0nSuK1KCblHas1IQjL+Fvnlv4sc87drZ0LWDo21CFGk5uThTioRzkDJwMc4AGfrgDTwZl9FMg/9k=',
+          },
+          {
+            id: 'white',
+            name: 'White Hoodie',
+            baseColorClass: 'bg-gray-200',
+            selectedRingClass: 'ring-white',
+            image: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAgACADASIAAhEBAxEB/8QAFwABAQEBAAAAAAAAAAAAAAAAAAUGAwT/xAAoEAABAwMBBgYDAAAAAAAAAAABAgMEBREhBhIxQVFhEyIycYGRobH/xAAYAQEBAQEBAAAAAAAAAAAAAAAAAgEDBP/EAB4RAQEBAAICAwEBAAAAAAAAAAABEQIhAzFBEhNRIv/aAAwDAQACEQMRAD8A31OYaadQh95uOhROC3FFKE++T2GmX+Zaf93b/wDeR86o+J6f7q1uN+Vb1E+g0D2+tU0sTqO3j7nWeec9/t1b5e/P0s1HmLVSYa3afU4VRWkKUtSpCCgADJznGPsdaek8SaWzU2abIq8Zt95AcAUrCdpGQrPTBByD8jWqM+1HnQpEWWgOR3kFC0HukjBFQqb4e6TTqcWe3SGW3m1haA3lCEqByCEg4BBA5A1Xy4/D18/2p9PqMGqxzJpkliUwFFO9lYUnI4IyOuRrY1Wbp0N+rSo1NiIlvuKSt9KEha1DBOSMnOCB9BpvTqZTqTHMaix2YzAUVbGUhKcnk8DqdSag+IseS8hhD7iEqKG3VFKVH0JGDg/Y6Z8sR4n875WqN/qjNMZjqXHfeL76GEJZQVkKWcAnHYdSTgDUejX6j1mZKi0qcl5+OAXEgEYB4UMgYUD2UMg+tSa9SY1dpT1NmqdSw6UlSmllCgUqChgjkcgai0eg0ugMPM0iKiMh5e9wgkkqxgZJJPA4HoOBrGeX9rrl+3T+m3KpU6lMiRVICIzBcShTzqwlsKUcJBJ4yTwNQ6Nf6PWZsqLSpyXn44BcSAQADwoZGFDPZQyD61Ir9JjV2lPU2ap1LDrSVKaWUKBSAoYI5HIBqLRKDSaAw8zSIqIyHl73CCSSrGBkkk8Dgeg4GscuX211z/AGt9UqsGkQjNqclEaMFJTvWcDJ4A+/wCtQKPxBpdYqTNNgz0Oy3wpSGwpOdqSo9RjoCe/aqV4g0uFW4kZiY7LbLclp0ehWpSF7i2R0UMHn299W6FR6fRmFxpUNuK44suOFsAFSidyeep5PPzOrPNv1b4cf6X+hV+jVuoS6fTZ6H5UU4ebCVDbnI7gA8gg4zio9f8QNHoM92BUqgEvtEBxLaFr2EjOCUg845x1Aq5TYUenRURICEMMIztQgYAyc/wBTqBcFjRLjVHKrUaS07Od273SpSSraMDIBAPAAzjOBg6z6m+GuM9dapNWiVGIiXCeQ/HcGUOIUClQ+CNP6R7EaNGjxY7SWGGUBtCE8JSAMAfcDT+t560jP/2Q==',
+          },
+          {
+            id: 'black',
+            name: 'Black Hoodie',
+            baseColorClass: 'bg-gray-800',
+            selectedRingClass: 'ring-gray-500',
+            image: 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAgACADASIAAhEBAxEB/8QAFwABAQEBAAAAAAAAAAAAAAAAAAYFA//EACgQAAICAQMCBQUAAAAAAAAAAAECAwQRAAUSIQYxExQiQVEVMmFxof/EABgBAQEBAQEAAAAAAAAAAAAAAAECBAMF/8QAHREBAQEAAwEAAwAAAAAAAAAAAAERAgMSITETQf/aAAwDAQACEQMRAD8A3lG6o3dWWGCSJpIuJFWVGYfXKk4/fS13uFttT1q8kkccz5WJpGCFyOmAev/ADQ1VbY0r0Uq2EkhlkY+GsczIsgy2SGAIPY564yMHTO9t2I+s21VnqzV1lQSSQWZZW2nGd+5wF82eAMY7nOl585j4769+/s2tG+tXk8sMc8Jmi+/Gsqll+4BztW/uFstL1K8kkccz5WJpGCFyOmAeuOn7aj17emW6sMNCzFLZfCSyTSIYzlslgCCMDJ64yMHprY9zcu1eou0ViWaJJkEkcE0spQEHO/c6g+bPAAx3POnnOfXffr22VL23aqyV4ZZ4I5p/uxrIwVn+wB6n7aNve27NRK0s8CyznEcZkAZz8KDqfuNVNZa9C1G/q1LUEtSRs0kYnlkVFBYkYBYAYyBjGCMjro3eJb9HWK1SCSGSJ0Z5DLPK5VSWAwGJAxgDGMEZHXTeTOrff16+l3qWKUkkMscVqB5YTiaNZAWjPswB5B+DrL7xt+y1eKW7WSSZsRo0qgsx6YAzz0Onu5z3I9Sp1IJYpII1Z5C9iVyrEsBgMSBjAGMYIyOumdQmvT6xZpVZ60caIkjPNC0jEFmAxl1AwQT3zkDoMZLznd9+vX7W9G/tXJpIYLUEscX3WWNwwT7kdP30F1G2paL6v7a88UbyJHHNM6+GzK7LtJz1B2gYyOp1Pp8txLvE9+aGScWUYRxxtGgVoY1B2szYyVbuemPxqK2mqJpd+1esVzCkNppY1gYOSySbSCZCB1HXB5zx0yubJ1b7/r3bGlf2rckkcFqCSWL70aSKWT7gHp++jL3uGzTirFPPHHLM2IkaQBnb0UDqfuFVNJa9LV9Pu6tSwlqSNmkjE8siqoLEjALAAYyBjGCMjro3eJb9HWK1SCSGSJ0Z5DLPK5VSWAwGJAxgDGMEZHXWedTq339en0u69u3bkkigq15pITiaOOZWZPYMASD8HXb3mG2kdWWezDClg4jhMjgCRj0C56n2wI1WW9Fql2rSeGOOJVlZp4mkYsGYAYLqBggnuc5HQYyTX9N1O3uMVyBqktSCdGg8WF3kEYeMhchwA2FY5wRknocczz3q339e3a3v7VuSSEWoJJYfvxrIpZPuAenf76C6jbfT9F9b9teSKN5EjinlYeGzK7LtJz1B2gYyOp1Pp0t2O8sN+aF5hZRhHHG0aBWhjUEqzNjJVu56Y/GorZ1FdLv27NiuYUhmmjWKBg5LJJtIcyEDqOuDznjpld2Tq33/XtYf/Z',
+          },
+        ];
+
+        let state = {
+            uploadedImage: null,
+            selectedColor: 'green',
+            customPrompt: '',
+            generatedImage: null,
+            isLoading: false,
+            error: null,
+            hoodies: INITIAL_HOODIES,
+            isSetupModalOpen: false,
+        };
+
+        // --- GEMINI SERVICE ---
+        const API_KEY = process.env.API_KEY;
+        if (!API_KEY) {
+            state.error = "API_KEY is not configured. This app cannot function without it.";
+            console.error("API_KEY environment variable not set");
+        }
+        const ai = new GoogleGenAI({ apiKey: API_KEY });
+
+        const parseDataUrl = (dataUrl) => {
+            const match = dataUrl.match(/^data:(image\/(?:jpeg|png|webp));base64,(.*)$/);
+            return match && match[1] && match[2] ? { mimeType: match[1], data: match[2] } : null;
+        };
+
+        const generatePortrait = async (faceImageDataUrl, hoodieImageDataUrl, customPrompt) => {
+            if (!API_KEY) {
+                return Promise.reject("API_KEY is not configured.");
+            }
+            try {
+                const faceImageDetails = parseDataUrl(faceImageDataUrl);
+                const hoodieImageDetails = parseDataUrl(hoodieImageDataUrl);
+
+                if (!faceImageDetails) throw new Error("Invalid face image format.");
+                if (!hoodieImageDetails) throw new Error("Invalid hoodie image format.");
+
+                const faceImagePart = { inlineData: { mimeType: faceImageDetails.mimeType, data: faceImageDetails.data } };
+                const hoodieImagePart = { inlineData: { mimeType: hoodieImageDetails.mimeType, data: hoodieImageDetails.data } };
+                const textPrompt = `Using the person's face from the first image and the hoodie from the second image, generate a photorealistic, professional headshot suitable for a corporate profile. The final image should seamlessly blend the person's face onto a body wearing the hoodie, maintaining a natural look and proportions. The background should be a simple, modern, slightly out-of-focus office setting. The lighting should be professional and flattering. ${customPrompt}`;
+                const textPart = { text: textPrompt };
+                
+                const response = await ai.models.generateContent({
+                    model: 'gemini-2.5-flash-image',
+                    contents: { parts: [faceImagePart, hoodieImagePart, textPart] },
+                    config: { responseModalities: [Modality.IMAGE] },
+                });
+
+                for (const part of response.candidates[0].content.parts) {
+                    if (part.inlineData) {
+                        return `data:image/png;base64,${part.inlineData.data}`;
+                    }
+                }
+                throw new Error('No image was generated by the API.');
+            } catch (error) {
+                console.error("Error generating portrait with Gemini:", error);
+                return Promise.reject(error.message || "An unknown error occurred during image generation.");
+            }
+        };
+
+        // --- IMAGE RESIZER UTILITY ---
+        const imageResizer = (base64Str, maxWidth, maxHeight) => {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.src = base64Str;
+                img.onload = () => {
+                    let { width, height } = img;
+                    if (width > height) {
+                        if (width > maxWidth) {
+                            height = Math.round((height * maxWidth) / width);
+                            width = maxWidth;
+                        }
+                    } else {
+                        if (height > maxHeight) {
+                            width = Math.round((width * maxHeight) / height);
+                            height = maxHeight;
+                        }
+                    }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) return reject(new Error('Could not get canvas context'));
+                    ctx.drawImage(img, 0, 0, width, height);
+                    const mimeType = base64Str.startsWith('data:image/jpeg') ? 'image/jpeg' : 'image/png';
+                    resolve(canvas.toDataURL(mimeType, 0.9));
+                };
+                img.onerror = reject;
+            });
+        };
+
+        // --- DOM MANIPULATION & RENDERING ---
+        const root = document.getElementById('root');
+
+        const render = () => {
+            root.innerHTML = `
+                ${SetupModal()}
+                <div class="min-h-screen bg-gray-900 text-gray-100 font-sans p-4 sm:p-6 lg:p-8">
+                    <div class="max-w-7xl mx-auto">
+                        ${Header()}
+                        <main class="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                            <div class="lg:col-span-1 space-y-6">
+                                ${ImageUploader()}
+                                ${ColorSelector()}
+                                ${CustomPrompt()}
+                                <button
+                                  id="generate-button"
+                                  ${state.isLoading || !state.uploadedImage ? 'disabled' : ''}
+                                  class="w-full bg-brand-green-light text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center gap-2 text-lg hover:bg-green-500 transition-all duration-200 disabled:bg-gray-600 disabled:cursor-not-allowed transform hover:scale-105 disabled:scale-100"
+                                >
+                                  ${state.isLoading ? 'Generating...' : `
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M19 3v4M17 5h4M14 11l-1.5 1.5L11 14l-1.5-1.5L8 11l1.5-1.5L11 8l1.5 1.5L14 11zM19 19v-4M21 19h-4" />
+                                    </svg>
+                                    Generate Portrait
+                                  `}
+                                </button>
+                            </div>
+                            <div class="md:col-span-1 lg:col-span-2">
+                                ${ResultDisplay()}
+                            </div>
+                            <div class="md:col-span-2 lg:col-span-3 mt-4">
+                                ${Instructions()}
+                            </div>
+                        </main>
+                    </div>
+                </div>
+            `;
+            addEventListeners();
+        };
+        
+        // --- COMPONENTS (as functions returning HTML strings) ---
+        const Header = () => `
+            <header class="p-4 sm:p-6 text-center">
+                <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight">
+                    GCC Hoodie <span class="text-brand-green-light">Photo Booth</span>
+                </h1>
+                <p class="mt-2 text-lg text-gray-400">
+                    Create your professional profile picture with our company gear.
+                </p>
+            </header>`;
+
+        const ImageUploader = () => `
+            <div>
+                <h2 class="text-lg font-semibold text-white mb-2">1. Upload Your Face Photo</h2>
+                <div id="image-uploader-box" class="aspect-square w-full bg-gray-800 border-2 border-dashed border-gray-600 rounded-lg flex items-center justify-center cursor-pointer hover:border-brand-green-light hover:bg-gray-700 transition-colors">
+                    <input type="file" id="face-image-input" class="hidden" accept="image/jpeg,image/png,image/webp" />
+                    ${state.uploadedImage ? `
+                        <img src="${state.uploadedImage}" alt="Uploaded preview" class="object-cover w-full h-full rounded-lg" />
+                    ` : `
+                        <div class="text-center text-gray-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-16 h-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                            <p class="mt-2 font-semibold">Click to upload an image</p>
+                            <p class="text-sm">PNG, JPG, WEBP</p>
+                        </div>
+                    `}
+                </div>
+            </div>`;
+
+        const ColorSelector = () => `
+            <div>
+                <div class="flex justify-between items-center mb-2">
+                    <h2 class="text-lg font-semibold text-white">2. Select Hoodie Color</h2>
+                    <button id="customize-hoodies-btn" class="text-sm text-gray-400 hover:text-white flex items-center gap-1.5 py-1 px-2 rounded-md hover:bg-gray-700/50 transition-colors" aria-label="Customize hoodie images">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L15.232 5.232z" />
+                        </svg>
+                        Customize
+                    </button>
+                </div>
+                <div class="grid grid-cols-3 gap-4">
+                    ${state.hoodies.map(hoodie => `
+                        <button
+                            data-color="${hoodie.id}"
+                            class="color-select-btn relative p-2 rounded-lg transition-all duration-200 ${state.selectedColor === hoodie.id ? `ring-2 ${hoodie.selectedRingClass} shadow-lg` : 'ring-1 ring-gray-700 hover:ring-gray-500'}"
+                        >
+                            ${hoodie.image ? `
+                                <img src="${hoodie.image}" alt="${hoodie.name}" class="w-full aspect-square object-cover rounded-md" />
+                            ` : `
+                                <div class="w-full aspect-square rounded-md ${hoodie.baseColorClass}"></div>
+                            `}
+                            <div class="absolute inset-0 bg-black/20 rounded-lg"></div>
+                            <span class="absolute bottom-2 left-1/2 -translate-x-1/2 text-sm font-bold text-white bg-black/50 px-2 py-1 rounded-md">${hoodie.name}</span>
+                        </button>
+                    `).join('')}
+                </div>
+            </div>`;
+        
+        const CustomPrompt = () => `
+             <div>
+              <h2 class="text-lg font-semibold text-white mb-2">3. (Optional) Add Corrections</h2>
+              <textarea
+                id="custom-prompt"
+                placeholder="e.g., 'smiling', 'add glasses', 'in a modern office background'"
+                class="w-full h-24 p-2 bg-gray-800 border border-gray-600 rounded-lg focus:ring-2 focus:ring-brand-green-light focus:border-brand-green-light transition-colors"
+              >${state.customPrompt}</textarea>
+            </div>`;
+        
+        const ResultDisplay = () => {
+            const content = () => {
+                if (state.isLoading) return `
+                    <div class="text-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-16 h-16 mx-auto text-brand-green-light animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M19 3v4M17 5h4M14 11l-1.5 1.5L11 14l-1.5-1.5L8 11l1.5-1.5L11 8l1.5 1.5L14 11zM19 19v-4M21 19h-4" />
+                        </svg>
+                        <h3 class="mt-4 text-xl font-semibold text-white">Generating Your Portrait...</h3>
+                        <p class="mt-1 text-gray-400">The AI is working its magic. This can take a moment.</p>
+                    </div>`;
+                if (state.error) return `
+                    <div class="text-center text-red-400 bg-red-900/50 p-4 rounded-lg">
+                        <h3 class="text-xl font-semibold">Generation Failed</h3>
+                        <p class="mt-1">${state.error}</p>
+                    </div>`;
+                if (state.generatedImage) return `
+                    <div class="relative group w-full h-full">
+                        <img src="${state.generatedImage}" alt="Generated portrait" class="object-contain w-full h-full rounded-lg" />
+                        <a href="${state.generatedImage}" download="gcc-hoodie-portrait.png" class="absolute bottom-4 right-4 bg-brand-green-light text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transform transition-transform group-hover:scale-105 hover:bg-green-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            Download
+                        </a>
+                    </div>`;
+                return `
+                    <div class="text-center text-gray-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-24 h-24 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M19 3v4M17 5h4M14 11l-1.5 1.5L11 14l-1.5-1.5L8 11l1.5-1.5L11 8l1.5 1.5L14 11zM19 19v-4M21 19h-4" />
+                        </svg>
+                        <h3 class="mt-4 text-xl font-semibold text-gray-300">Your Portrait Awaits</h3>
+                        <p class="mt-1">Follow the steps to create your new profile picture.</p>
+                    </div>`;
+            };
+            return `<div class="w-full aspect-square bg-gray-900/50 border-2 border-gray-700 rounded-lg flex items-center justify-center p-4">${content()}</div>`;
+        };
+        
+        const Instructions = () => {
+            const Step = ({ number, title, description }) => `
+                <div class="flex items-start space-x-4">
+                    <div class="flex-shrink-0 w-8 h-8 bg-brand-green rounded-full flex items-center justify-center font-bold text-white">${number}</div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-white">${title}</h3>
+                        <p class="text-gray-400">${description}</p>
+                    </div>
+                </div>`;
+            return `
+                <div class="bg-gray-800/50 p-6 rounded-lg border border-gray-700">
+                    <h2 class="text-xl font-bold text-white mb-4">How it works</h2>
+                    <div class="space-y-4">
+                        ${Step({ number: 1, title: "Upload Your Photo", description: "Choose a clear, front-facing photo of your face. Good lighting works best!" })}
+                        ${Step({ number: 2, title: "Choose Your Hoodie", description: "Select your favorite color: green, white, or black." })}
+                        ${Step({ number: 3, title: "Add Custom Edits", description: "Use the text prompt to make small adjustments like 'add glasses' or 'change background to a library'." })}
+                        ${Step({ number: 4, title: "Generate & Download", description: "Click generate, wait for the magic, and download your new professional portrait." })}
+                    </div>
+                </div>`;
+        };
+
+        const SetupModal = () => {
+            const HoodieUploader = (hoodie) => `
+                <div class="bg-gray-800 p-4 rounded-lg text-center border border-gray-700">
+                    <h3 class="font-semibold text-white mb-2">${hoodie.name}</h3>
+                    <div id="setup-uploader-${hoodie.id}" class="aspect-square w-full bg-gray-700/50 border-2 border-dashed border-gray-600 rounded-lg flex items-center justify-center cursor-pointer hover:border-brand-green-light transition-colors">
+                        <input type="file" data-hoodie-id="${hoodie.id}" class="setup-hoodie-input hidden" accept="image/jpeg,image/png,image/webp"/>
+                        ${hoodie.image ? `
+                            <img src="${hoodie.image}" alt="${hoodie.name} preview" class="object-cover w-full h-full rounded-lg" />
+                        ` : `
+                            <div class="text-gray-400">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                </svg>
+                                <p class="mt-2 text-sm font-semibold">Click to Upload</p>
+                            </div>
+                        `}
+                    </div>
+                </div>`;
+            
+            return `
+                <div id="setup-modal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 ${state.isSetupModalOpen ? '' : 'hidden'}">
+                    <div class="max-w-4xl w-full mx-auto bg-gray-900 p-6 sm:p-8 rounded-2xl border border-gray-700 shadow-2xl">
+                        <h1 class="text-3xl sm:text-4xl font-bold text-center text-white">Hoodie Image Setup</h1>
+                        <p class="text-center text-gray-400 mt-2 mb-8 max-w-2xl mx-auto">
+                           You can upload a reference image for each hoodie color. This will be saved in your browser for future use.
+                        </p>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            ${state.hoodies.map(HoodieUploader).join('')}
+                        </div>
+                        <div class="text-center mt-8">
+                            <button id="close-setup-modal-btn" class="bg-brand-green-light text-white font-bold py-2 px-6 rounded-lg hover:bg-green-500 transition-colors">Done</button>
+                        </div>
+                    </div>
+                </div>`;
+        };
+
+        // --- EVENT HANDLERS ---
+        const handleFaceImageUpload = (file) => {
+            if (file) {
+                const reader = new FileReader();
+                reader.onloadend = async () => {
+                    try {
+                        const resizedImage = await imageResizer(reader.result, 1024, 1024);
+                        state.uploadedImage = resizedImage;
+                    } catch (error) {
+                        console.error("Error resizing image:", error);
+                        state.uploadedImage = reader.result; // Fallback
+                    }
+                    render();
+                };
+                reader.readAsDataURL(file);
+            }
+        };
+        
+        const handleHoodieImageUpload = (hoodieId, file) => {
+            if(file) {
+                const reader = new FileReader();
+                reader.onloadend = async () => {
+                    try {
+                        const resized = await imageResizer(reader.result, 1024, 1024);
+                        const hoodie = state.hoodies.find(h => h.id === hoodieId);
+                        if(hoodie) hoodie.image = resized;
+                    } catch(e) {
+                        console.error("Error resizing hoodie image", e);
+                        const hoodie = state.hoodies.find(h => h.id === hoodieId);
+                        if(hoodie) hoodie.image = reader.result;
+                    }
+                    saveHoodiesToLocalStorage();
+                    render();
+                }
+                reader.readAsDataURL(file);
+            }
+        };
+
+        const handleGenerate = async () => {
+            if (!state.uploadedImage) {
+                state.error = "Please upload an image first.";
+                render();
+                return;
+            }
+
+            const selectedHoodie = state.hoodies.find(h => h.id === state.selectedColor);
+            if (!selectedHoodie?.image) {
+                state.error = "Hoodie reference image is missing. Please use 'Customize' to set it up.";
+                state.isSetupModalOpen = true;
+                render();
+                return;
+            }
+
+            state.isLoading = true;
+            state.error = null;
+            state.generatedImage = null;
+            render();
+
+            try {
+                const result = await generatePortrait(state.uploadedImage, selectedHoodie.image, state.customPrompt);
+                state.generatedImage = result;
+            } catch (err) {
+                state.error = err.toString();
+            } finally {
+                state.isLoading = false;
+                render();
+            }
+        };
+
+        // --- LOCAL STORAGE ---
+        const saveHoodiesToLocalStorage = () => {
+            try {
+                localStorage.setItem('hoodies', JSON.stringify(state.hoodies));
+            } catch (e) {
+                console.error("Failed to save hoodies to localStorage", e);
+                state.error = "Could not save settings. Your browser might be in private mode.";
+                render();
+            }
+        };
+
+        const loadHoodiesFromLocalStorage = () => {
+            try {
+                const savedHoodies = localStorage.getItem('hoodies');
+                if (savedHoodies) {
+                    const parsedHoodies = JSON.parse(savedHoodies);
+                    state.hoodies = INITIAL_HOODIES.map(initial => {
+                        const saved = parsedHoodies.find(h => h.id === initial.id);
+                        return saved?.image ? { ...initial, image: saved.image } : initial;
+                    });
+                }
+            } catch (e) {
+                console.error("Failed to load hoodies from localStorage", e);
+            }
+        };
+
+        // --- INITIALIZATION & EVENT LISTENERS ---
+        const addEventListeners = () => {
+            document.getElementById('image-uploader-box')?.addEventListener('click', () => document.getElementById('face-image-input').click());
+            document.getElementById('face-image-input')?.addEventListener('change', (e) => handleFaceImageUpload(e.target.files[0]));
+            document.querySelectorAll('.color-select-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    state.selectedColor = btn.dataset.color;
+                    render();
+                });
+            });
+            document.getElementById('custom-prompt')?.addEventListener('input', (e) => state.customPrompt = e.target.value);
+            document.getElementById('generate-button')?.addEventListener('click', handleGenerate);
+            document.getElementById('customize-hoodies-btn')?.addEventListener('click', () => {
+                state.isSetupModalOpen = true;
+                render();
+            });
+            document.getElementById('close-setup-modal-btn')?.addEventListener('click', () => {
+                state.isSetupModalOpen = false;
+                render();
+            });
+            document.querySelectorAll('.setup-hoodie-input').forEach(input => {
+                input.addEventListener('change', (e) => {
+                    handleHoodieImageUpload(e.target.dataset.hoodieId, e.target.files[0]);
+                });
+            });
+             document.querySelectorAll('[id^="setup-uploader-"]').forEach(box => {
+                box.addEventListener('click', () => box.querySelector('input').click());
+            });
+        };
+
+        // --- APP START ---
+        loadHoodiesFromLocalStorage();
+        render();
+    </script>
   </body>
 </html>
